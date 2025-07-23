@@ -16,16 +16,21 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.9
+        python-version: '3.9'
 
-    - name: Install dependencies
+    - name: Create Python virtual environment and install DBT
       run: |
         python -m venv dbt-env
         source dbt-env/bin/activate
         pip install --upgrade pip
         pip install dbt-snowflake
 
-    - name: Create DBT profile
+    - name: Decode and Save Snowflake Private Key
+      run: |
+        echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY_RAW }}" | base64 -d > snowflake_key.p8
+        chmod 600 snowflake_key.p8
+
+    - name: Create DBT Profile
       run: |
         mkdir -p ~/.dbt
         cat > ~/.dbt/profiles.yml <<EOF
@@ -36,24 +41,29 @@ jobs:
               type: snowflake
               account: $SNOWFLAKE_ACCOUNT
               user: $SNOWFLAKE_USER
-              private_key_path_raw: $SNOWFLAKE_PRIVATE_KEY_RAW
+              private_key_path: ./snowflake_key.p8
               role: $SNOWFLAKE_ROLE
               database: $SNOWFLAKE_DATABASE
               warehouse: $SNOWFLAKE_WAREHOUSE
               schema: $SNOWFLAKE_SCHEMA
               threads: 1
         EOF
-
-    - name: Run DBT
       env:
         SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
         SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-        SNOWFLAKE_PRIVATE_KEY_RAW: ${{ secrets.SNOWFLAKE_PRIVATE_KEY_RAW  }}
         SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
         SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-        SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
         SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+        SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
+
+    - name: Run DBT model with debug
+      env:
+        SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+        SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+        SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+        SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+        SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+        SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
       run: |
         source dbt-env/bin/activate
-        dbt run --select my_first_dbt_model --profiles-dir ~/.dbt
-
+        dbt run --select my_first_dbt_model --profiles-dir ~/.dbt --debug
