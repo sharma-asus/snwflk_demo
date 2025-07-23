@@ -1,2 +1,4 @@
-#virtual environment for dbt
-dbt-venv/
+
+target/
+dbt_packages/
+logs/
