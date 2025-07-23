@@ -25,6 +25,25 @@ jobs:
         pip install --upgrade pip
         pip install dbt-snowflake
 
+    - name: Create DBT profile
+      run: |
+        mkdir -p ~/.dbt
+        cat > ~/.dbt/profiles.yml <<EOF
+        snwflk_demo:
+          target: uat
+          outputs:
+            uat:
+              type: snowflake
+              account: $SNOWFLAKE_ACCOUNT
+              user: $SNOWFLAKE_USER
+              private_key_path_raw: $SNOWFLAKE_PRIVATE_KEY_RAW
+              role: $SNOWFLAKE_ROLE
+              database: $SNOWFLAKE_DATABASE
+              warehouse: $SNOWFLAKE_WAREHOUSE
+              schema: $SNOWFLAKE_SCHEMA
+              threads: 1
+        EOF
+
     - name: Run DBT
       env:
         SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
@@ -36,4 +55,5 @@ jobs:
         SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
       run: |
         source dbt-env/bin/activate
-        dbt run --select my_first_dbt_model
+        dbt run --select my_first_dbt_model --profiles-dir ~/.dbt
+
