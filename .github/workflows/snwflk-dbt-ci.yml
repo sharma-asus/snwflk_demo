@@ -1,0 +1,39 @@
+name: Run DBT on Snowflake
+
+on:
+  push:
+    branches: [ feature/snwflk-test ]
+  workflow_dispatch:
+
+jobs:
+  dbt-run:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.9
+
+    - name: Install dependencies
+      run: |
+        python -m venv dbt-env
+        source dbt-env/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run DBT
+      env:
+        SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+        SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+        SNOWFLAKE_PRIVATE_KEY_RAW: ${{ secrets.SNOWFLAKE_PRIVATE_KEY_RAW  }}
+        SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+        SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+        SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
+        SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+      run: |
+        source dbt-env/bin/activate
+        dbt run --select my_first_dbt_model
