@@ -56,6 +56,15 @@ jobs:
         SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
         SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
 
+    - name: Validate secrets
+      run: |
+        test -n "${{ secrets.SNOWFLAKE_USER }}" || (echo "Missing SNOWFLAKE_USER" && exit 1)
+        test -n "${{ secrets.SNOWFLAKE_ACCOUNT }}" || (echo "Missing SNOWFLAKE_ACCOUNT" && exit 1)
+        test -n "${{ secrets.SNOWFLAKE_ROLE }}" || (echo "Missing SNOWFLAKE_ROLE" && exit 1)
+        test -n "${{ secrets.SNOWFLAKE_DATABASE }}" || (echo "Missing SNOWFLAKE_DATABASE" && exit 1)
+        test -n "${{ secrets.SNOWFLAKE_SCHEMA }}" || (echo "Missing SNOWFLAKE_SCHEMA" && exit 1)
+        test -n "${{ secrets.SNOWFLAKE_WAREHOUSE }}" || (echo "Missing SNOWFLAKE_WAREHOUSE" && exit 1)
+
     - name: Run DBT model with debug
       env:
         SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
