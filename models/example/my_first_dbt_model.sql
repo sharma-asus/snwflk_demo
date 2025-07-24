@@ -1,4 +1,3 @@
-
 /*
     Welcome to your first dbt model!
     Did you know that you can also configure models directly within SQL files?
@@ -7,13 +6,17 @@
     Try changing "table" to "view" below
 */
 
-{{ config(materialized='table', schema='PUBLIC', transient=false) }}
+{{ config(
+    materialized='table',
+    schema=var('my_schema'),
+    transient=false
+) }}
 
 with source_data as (
 
-    select 1 as id
+    select 1 as id, '{{ var("my_table") }}' as table_name, '{{ var("run_date") }}' as run_date
     union all
-    select null as id
+    select null as id, '{{ var("my_table") }}', '{{ var("run_date") }}'
 
 )
 

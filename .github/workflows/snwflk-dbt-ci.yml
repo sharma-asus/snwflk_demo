@@ -9,6 +9,19 @@ jobs:
   dbt-run:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        model: [my_first_dbt_model, my_second_dbt_model] # Add more models as needed
+
+    env:
+      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+      SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+      SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+      SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
+      SNOWFLAKE_PRIVATE_KEY_RAW: ${{ secrets.SNOWFLAKE_PRIVATE_KEY_RAW }}
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -27,7 +40,7 @@ jobs:
 
     - name: Decode and Save Snowflake Private Key
       run: |
-        echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY_RAW }}" | base64 -d > snowflake_key.p8
+        echo "${SNOWFLAKE_PRIVATE_KEY_RAW}" | base64 -d > snowflake_key.p8
         chmod 600 snowflake_key.p8
 
     - name: Create DBT Profile
@@ -48,31 +61,17 @@ jobs:
               schema: $SNOWFLAKE_SCHEMA
               threads: 1
         EOF
-      env:
-        SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-        SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-        SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
-        SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-        SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-        SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
 
     - name: Validate secrets
       run: |
-        test -n "${{ secrets.SNOWFLAKE_USER }}" || (echo "Missing SNOWFLAKE_USER" && exit 1)
-        test -n "${{ secrets.SNOWFLAKE_ACCOUNT }}" || (echo "Missing SNOWFLAKE_ACCOUNT" && exit 1)
-        test -n "${{ secrets.SNOWFLAKE_ROLE }}" || (echo "Missing SNOWFLAKE_ROLE" && exit 1)
-        test -n "${{ secrets.SNOWFLAKE_DATABASE }}" || (echo "Missing SNOWFLAKE_DATABASE" && exit 1)
-        test -n "${{ secrets.SNOWFLAKE_SCHEMA }}" || (echo "Missing SNOWFLAKE_SCHEMA" && exit 1)
-        test -n "${{ secrets.SNOWFLAKE_WAREHOUSE }}" || (echo "Missing SNOWFLAKE_WAREHOUSE" && exit 1)
+        test -n "$SNOWFLAKE_USER" || (echo "Missing SNOWFLAKE_USER" && exit 1)
+        test -n "$SNOWFLAKE_ACCOUNT" || (echo "Missing SNOWFLAKE_ACCOUNT" && exit 1)
+        test -n "$SNOWFLAKE_ROLE" || (echo "Missing SNOWFLAKE_ROLE" && exit 1)
+        test -n "$SNOWFLAKE_DATABASE" || (echo "Missing SNOWFLAKE_DATABASE" && exit 1)
+        test -n "$SNOWFLAKE_SCHEMA" || (echo "Missing SNOWFLAKE_SCHEMA" && exit 1)
+        test -n "$SNOWFLAKE_WAREHOUSE" || (echo "Missing SNOWFLAKE_WAREHOUSE" && exit 1)
 
     - name: Run DBT model with debug
-      env:
-        SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-        SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-        SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
-        SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-        SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-        SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
       run: |
         source dbt-env/bin/activate
-        dbt run --select my_first_dbt_model --profiles-dir ~/.dbt --debug
+        dbt run --select ${{ matrix.model }} --profiles-dir ~/.dbt --debug
